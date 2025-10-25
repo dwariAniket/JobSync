@@ -1,0 +1,83 @@
+import React, { useState } from 'react';
+import axios from 'axios';
+import { storage } from '../../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useNavigate } from 'react-router-dom';
+function EmployeeSignup() {
+  const navigate = useNavigate();
+  const [ccv, setCv] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    location: '',
+    skills: '',
+    qualifications: '',
+  });
+  const [cvURL, setCvURL] = useState(''); // State to store the Firebase link of the CV
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    setCv(file);
+
+    if (file) {
+      const cvRef = ref(storage, cv/${file.name});
+      
+      uploadBytes(cvRef, file)
+        .then(() => {
+          return getDownloadURL(cvRef); // Get the download URL after upload
+        })
+        .then((url) => {
+          setCvURL(url); // Store the URL in state
+          console.log("CV file URL:", url); // Print the download URL
+        })
+        .catch((error) => {
+          console.error("Error uploading file:", error);
+        });
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const dataToSend = {
+      ...formData,
+      cvURL: cvURL
+  };
+  console.log(dataToSend)
+    fetch('http://192.168.0.109:5000/employee/signup', {
+          method:'post',
+          headers:{
+            'Content-type':'application/json'
+          },
+          body:JSON.stringify(dataToSend)
+    })
+    .then(response => response.json())
+      .then(data => {
+        console.log('Employee signed up successfully:', data);
+        // Redirect to employee dashboard or login
+        navigate('/employee/login');
+      })
+      .catch(error => {
+        console.error('Error signing up as employee:', error);
+      });
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input type="text" name="name" onChange={handleChange} placeholder="Full Name" required />
+      <input type="email" name="email" onChange={handleChange} placeholder="Email" required />
+      <input type="password" name="password" onChange={handleChange} placeholder="Password" required />
+      <input type="text" name="location" onChange={handleChange} placeholder="Location" required />
+      <input type="text" name="skills" onChange={handleChange} placeholder="Skills (comma separated)" required />
+      <textarea name="qualifications" onChange={handleChange} placeholder="Qualifications" required></textarea>
+      <input type="file" name="cv" onChange={handleFileChange} accept=".pdf,.doc,.docx" required />
+      <button type="submit">Sign Up as Employee</button>
+    </form>
+  );
+}
+
+export default EmployeeSignup;
