@@ -1,0 +1,7 @@
+Backend/glove_embeddings/
+*.zip
+*.large
+*.zip
+*.large
+node_modules
+Backend/node_modules/
